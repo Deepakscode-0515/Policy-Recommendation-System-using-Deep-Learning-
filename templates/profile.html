@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+  {% if mode == "view" %}
+    <div class="flex between items-center">
+      <h2>Your Profile</h2>
+      <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Edit</a>
+    </div>
+    {% if profile %}
+      <div class="card">
+        <div><strong>Name:</strong> {{ profile.full_name }}</div>
+        <div><strong>Age:</strong> {{ profile.age }}</div>
+        <div><strong>Gender:</strong> {{ profile.gender|title }}</div>
+        <div><strong>Health issues:</strong> {{ profile.health_issues or "None" }}</div>
+        <div><strong>Smoking:</strong> {{ "Yes" if profile and profile.smoking else "No" }}</div>
+        <div><strong>Alcohol:</strong> {{ "Yes" if profile and profile.alcohol else "No" }}</div>
+        <div><strong>Annual Income (INR):</strong> {{ profile.annual_income_inr|inr }}</div>
+      </div>
+      <a class="btn btn-primary" href="{{ url_for('new_assessment') }}">New Assessment</a>
+    {% else %}
+      <p>No profile yet.</p>
+      <a class="btn btn-primary" href="{{ url_for('edit_profile') }}">Create Profile</a>
+    {% endif %}
+  {% else %}
+    <h2>{{ "Edit" if profile else "Create" }} Profile</h2>
+    <form method="post" class="form-grid">
+      <label>Full name
+        <input type="text" name="full_name" value="{{ profile.full_name if profile else '' }}" required />
+      </label>
+      <label>Age
+        <input type="number" name="age" value="{{ profile.age if profile else '' }}" min="1" required />
+      </label>
+      <label>Gender
+        <select name="gender">
+          {% set g = profile.gender if profile else "other" %}
+          <option value="male" {{ "selected" if g=="male" else "" }}>Male</option>
+          <option value="female" {{ "selected" if g=="female" else "" }}>Female</option>
+          <option value="other" {{ "selected" if g=="other" else "" }}>Other</option>
+        </select>
+      </label>
+      <label>Health issues
+        <select name="health_issues" class="health-issues-select" multiple>
+          {% set health_issues = (profile.health_issues or '').split(',') if profile else [] %}
+          <option value="Acne" {{ "selected" if "Acne" in health_issues else "" }}>Acne</option>
+          <option value="ADHD (Attention Deficit Hyperactivity Disorder)" {{ "selected" if "ADHD (Attention Deficit Hyperactivity Disorder)" in health_issues else "" }}>ADHD (Attention Deficit Hyperactivity Disorder)</option>
+          <option value="Alcohol-related liver disease" {{ "selected" if "Alcohol-related liver disease" in health_issues else "" }}>Alcohol-related liver disease</option>
+          <option value="Alzheimer's disease" {{ "selected" if "Alzheimer's disease" in health_issues else "" }}>Alzheimer's disease</option>
+          <option value="Anemia" {{ "selected" if "Anemia" in health_issues else "" }}>Anemia</option>
+          <option value="Anxiety disorders" {{ "selected" if "Anxiety disorders" in health_issues else "" }}>Anxiety disorders</option>
+          <option value="Arthritis (Osteoarthritis, Rheumatoid)" {{ "selected" if "Arthritis (Osteoarthritis, Rheumatoid)" in health_issues else "" }}>Arthritis (Osteoarthritis, Rheumatoid)</option>
+          <option value="Asthma" {{ "selected" if "Asthma" in health_issues else "" }}>Asthma</option>
+          <option value="Atrial fibrillation" {{ "selected" if "Atrial fibrillation" in health_issues else "" }}>Atrial fibrillation</option>
+          <option value="Autism spectrum disorders" {{ "selected" if "Autism spectrum disorders" in health_issues else "" }}>Autism spectrum disorders</option>
+          <option value="Back pain" {{ "selected" if "Back pain" in health_issues else "" }}>Back pain</option>
+          <option value="Bipolar disorder" {{ "selected" if "Bipolar disorder" in health_issues else "" }}>Bipolar disorder</option>
+          <option value="Breast cancer" {{ "selected" if "Breast cancer" in health_issues else "" }}>Breast cancer</option>
+          <option value="Celiac disease" {{ "selected" if "Celiac disease" in health_issues else "" }}>Celiac disease</option>
+          <option value="Chickenpox" {{ "selected" if "Chickenpox" in health_issues else "" }}>Chickenpox</option>
+          <option value="Chronic obstructive pulmonary disease (COPD)" {{ "selected" if "Chronic obstructive pulmonary disease (COPD)" in health_issues else "" }}>Chronic obstructive pulmonary disease (COPD)</option>
+          <option value="Cirrhosis" {{ "selected" if "Cirrhosis" in health_issues else "" }}>Cirrhosis</option>
+          <option value="Colorectal cancer" {{ "selected" if "Colorectal cancer" in health_issues else "" }}>Colorectal cancer</option>
+          <option value="Congestive heart failure" {{ "selected" if "Congestive heart failure" in health_issues else "" }}>Congestive heart failure</option>
+          <option value="Coronary artery disease" {{ "selected" if "Coronary artery disease" in health_issues else "" }}>Coronary artery disease</option>
+          <option value="Crohn's disease" {{ "selected" if "Crohn's disease" in health_issues else "" }}>Crohn's disease</option>
+          <option value="Cystic fibrosis" {{ "selected" if "Cystic fibrosis" in health_issues else "" }}>Cystic fibrosis</option>
+          <option value="Dengue" {{ "selected" if "Dengue" in health_issues else "" }}>Dengue</option>
+          <option value="Depression" {{ "selected" if "Depression" in health_issues else "" }}>Depression</option>
+          <option value="Diabetes (Type 1 and Type 2)" {{ "selected" if "Diabetes (Type 1 and Type 2)" in health_issues else "" }}>Diabetes (Type 1 and Type 2)</option>
+          <option value="Down syndrome" {{ "selected" if "Down syndrome" in health_issues else "" }}>Down syndrome</option>
+          <option value="Drug addiction" {{ "selected" if "Drug addiction" in health_issues else "" }}>Drug addiction</option>
+          <option value="Eczema" {{ "selected" if "Eczema" in health_issues else "" }}>Eczema</option>
+          <option value="Endometriosis" {{ "selected" if "Endometriosis" in health_issues else "" }}>Endometriosis</option>
+          <option value="Epilepsy" {{ "selected" if "Epilepsy" in health_issues else "" }}>Epilepsy</option>
+          <option value="Erectile dysfunction" {{ "selected" if "Erectile dysfunction" in health_issues else "" }}>Erectile dysfunction</option>
+          <option value="Fatty liver disease" {{ "selected" if "Fatty liver disease" in health_issues else "" }}>Fatty liver disease</option>
+          <option value="Flu (Influenza)" {{ "selected" if "Flu (Influenza)" in health_issues else "" }}>Flu (Influenza)</option>
+          <option value="Gallstones" {{ "selected" if "Gallstones" in health_issues else "" }}>Gallstones</option>
+          <option value="Gastroesophageal reflux disease (GERD)" {{ "selected" if "Gastroesophageal reflux disease (GERD)" in health_issues else "" }}>Gastroesophageal reflux disease (GERD)</option>
+          <option value="Gout" {{ "selected" if "Gout" in health_issues else "" }}>Gout</option>
+          <option value="Heart attack (Myocardial infarction)" {{ "selected" if "Heart attack (Myocardial infarction)" in health_issues else "" }}>Heart attack (Myocardial infarction)</option>
+          <option value="Hepatitis (A, B, C)" {{ "selected" if "Hepatitis (A, B, C)" in health_issues else "" }}>Hepatitis (A, B, C)</option>
+          <option value="High blood pressure (Hypertension)" {{ "selected" if "High blood pressure (Hypertension)" in health_issues else "" }}>High blood pressure (Hypertension)</option>
+          <option value="HIV/AIDS" {{ "selected" if "HIV/AIDS" in health_issues else "" }}>HIV/AIDS</option>
+          <option value="Hyperthyroidism" {{ "selected" if "Hyperthyroidism" in health_issues else "" }}>Hyperthyroidism</option>
+          <option value="Hypothyroidism" {{ "selected" if "Hypothyroidism" in health_issues else "" }}>Hypothyroidism</option>
+          <option value="Infertility" {{ "selected" if "Infertility" in health_issues else "" }}>Infertility</option>
+          <option value="Irritable bowel syndrome (IBS)" {{ "selected" if "Irritable bowel syndrome (IBS)" in health_issues else "" }}>Irritable bowel syndrome (IBS)</option>
+          <option value="Kidney disease" {{ "selected" if "Kidney disease" in health_issues else "" }}>Kidney disease</option>
+          <option value="Leukemia" {{ "selected" if "Leukemia" in health_issues else "" }}>Leukemia</option>
+          <option value="Liver disease" {{ "selected" if "Liver disease" in health_issues else "" }}>Liver disease</option>
+          <option value="Lung cancer" {{ "selected" if "Lung cancer" in health_issues else "" }}>Lung cancer</option>
+          <option value="Lupus" {{ "selected" if "Lupus" in health_issues else "" }}>Lupus</option>
+          <option value="Malaria" {{ "selected" if "Malaria" in health_issues else "" }}>Malaria</option>
+          <option value="Measles" {{ "selected" if "Measles" in health_issues else "" }}>Measles</option>
+          <option value="Melanoma (Skin cancer)" {{ "selected" if "Melanoma (Skin cancer)" in health_issues else "" }}>Melanoma (Skin cancer)</option>
+          <option value="Metabolic syndrome" {{ "selected" if "Metabolic syndrome" in health_issues else "" }}>Metabolic syndrome</option>
+          <option value="Multiple sclerosis" {{ "selected" if "Multiple sclerosis" in health_issues else "" }}>Multiple sclerosis</option>
+          <option value="Muscular dystrophy" {{ "selected" if "Muscular dystrophy" in health_issues else "" }}>Muscular dystrophy</option>
+          <option value="Obesity" {{ "selected" if "Obesity" in health_issues else "" }}>Obesity</option>
+          <option value="Osteoporosis" {{ "selected" if "Osteoporosis" in health_issues else "" }}>Osteoporosis</option>
+          <option value="Parkinson's disease" {{ "selected" if "Parkinson's disease" in health_issues else "" }}>Parkinson's disease</option>
+          <option value="Peptic ulcers" {{ "selected" if "Peptic ulcers" in health_issues else "" }}>Peptic ulcers</option>
+          <option value="Peripheral artery disease" {{ "selected" if "Peripheral artery disease" in health_issues else "" }}>Peripheral artery disease</option>
+          <option value="Polycystic ovary syndrome (PCOS)" {{ "selected" if "Polycystic ovary syndrome (PCOS)" in health_issues else "" }}>Polycystic ovary syndrome (PCOS)</option>
+          <option value="Pneumonia" {{ "selected" if "Pneumonia" in health_issues else "" }}>Pneumonia</option>
+          <option value="Prostate cancer" {{ "selected" if "Prostate cancer" in health_issues else "" }}>Prostate cancer</option>
+          <option value="Psoriasis" {{ "selected" if "Psoriasis" in health_issues else "" }}>Psoriasis</option>
+          <option value="Rosacea" {{ "selected" if "Rosacea" in health_issues else "" }}>Rosacea</option>
+          <option value="Schizophrenia" {{ "selected" if "Schizophrenia" in health_issues else "" }}>Schizophrenia</option>
+          <option value="Sexually transmitted infections (STIs)" {{ "selected" if "Sexually transmitted infections (STIs)" in health_issues else "" }}>Sexually transmitted infections (STIs)</option>
+          <option value="Sickle cell anemia" {{ "selected" if "Sickle cell anemia" in health_issues else "" }}>Sickle cell anemia</option>
+          <option value="Skin infections (fungal, bacterial)" {{ "selected" if "Skin infections (fungal, bacterial)" in health_issues else "" }}>Skin infections (fungal, bacterial)</option>
+          <option value="Sleep disorders" {{ "selected" if "Sleep disorders" in health_issues else "" }}>Sleep disorders</option>
+          <option value="Smoking-related illnesses" {{ "selected" if "Smoking-related illnesses" in health_issues else "" }}>Smoking-related illnesses</option>
+          <option value="Stroke" {{ "selected" if "Stroke" in health_issues else "" }}>Stroke</option>
+          <option value="Thyroid disorders" {{ "selected" if "Thyroid disorders" in health_issues else "" }}>Thyroid disorders</option>
+          <option value="Tuberculosis" {{ "selected" if "Tuberculosis" in health_issues else "" }}>Tuberculosis</option>
+          <option value="Ulcerative colitis" {{ "selected" if "Ulcerative colitis" in health_issues else "" }}>Ulcerative colitis</option>
+          <option value="Zika virus" {{ "selected" if "Zika virus" in health_issues else "" }}>Zika virus</option>
+        </select>
+      </label>
+      <div><strong>Smoking:</strong> <label class="checkbox"><input type="checkbox" name="smoking" {{ "checked" if profile and profile.smoking else "" }} /><span>Smoking</span></label></div>
+      <div><strong>Alcohol:</strong> <label class="checkbox"><input type="checkbox" name="alcohol" {{ "checked" if profile and profile.alcohol else "" }} /><span>Alcohol</span></label></div>
+      <label>Annual Income (INR)
+        <input type="number" name="annual_income_inr" min="0" value="{{ profile.annual_income_inr if profile else '' }}" required />
+      </label>
+      <div class="actions">
+        <button class="btn btn-primary">Save</button>
+        <a href="{{ url_for('view_profile') }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}

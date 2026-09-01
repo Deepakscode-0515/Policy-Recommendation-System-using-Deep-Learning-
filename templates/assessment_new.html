@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Run New Assessment</h2>
+<div class="card">
+  <h3>Profile Snapshot</h3>
+  <div><strong>Name:</strong> {{ profile.full_name }}</div>
+  <div><strong>Age:</strong> {{ profile.age }}</div>
+  <div><strong>Gender:</strong> {{ profile.gender|title }}</div>
+  <div><strong>Health issues:</strong> {{ profile.health_issues or "None" }}</div>
+  <div><strong>Smoking:</strong> {{ "Yes" if profile.smoking else "No" }}</div>
+  <div><strong>Alcohol:</strong> {{ "Yes" if profile.alcohol else "No" }}</div>
+  <div><strong>Annual Income (INR):</strong> {{ profile.annual_income_inr|inr }}</div>
+</div>
+
+<form method="post" class="form-card">
+  <p>Click below to compute RAF and get health insights and policy recommendations.</p>
+  <button class="btn btn-primary">Run Assessment</button>
+</form>
+{% endblock %}

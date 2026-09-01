@@ -1,0 +1,239 @@
+Insurance Policy Recommendation System — Comprehensive Documentation
+
+Overview
+This document describes the end-to-end specification and design of a Flask + MySQL 8 application that computes a user’s Risk Assessment Factor (RAF) and provides health insights and insurance policy recommendations using Groq AI. It includes functional/non-functional requirements, detailed implementation design (algorithms, architecture, feature extraction, libraries), output screens, and system testing with performance expectations. All currency handling for income is in Indian Rupees (INR).
+
+0. Requirements
+
+0.1 Functional Requirements (FR)
+- FR1 Registration: Users can create an account with email and password. Unique email enforced.
+- FR2 Login/Logout: Users authenticate and can securely log out (session cleared).
+- FR3 Profile Create/Update: Users provide full details (name, age, gender, annual_income_inr, smoking, alcohol, health_issues). Annual income is stored as integer rupees and displayed as INR with Indian digit grouping (e.g., ₹12,34,567).
+- FR4 Health Issues Source: Assessment uses the provided full health-issues list for risk computation. Free-text input is matched against curated terms (including aliases).
+- FR5 Assessment Create: User runs an assessment; app computes RAF and calls Groq for insights and policy recommendations.
+- FR6 Assessment View: User can view detailed results (RAF value, inputs snapshot, Groq insights, and recommended policy types).
+- FR7 Recent Activity: User sees their historical assessments (reverse chronological).
+- FR8 Delete Assessment: User can delete any of their prior assessments from recent activity.
+- FR9 Access Control: Each user sees/edits only their own profile/assessments.
+- FR10 Client UX: Smooth page transitions, responsive layout, accessible form controls (e.g., smoking/alcohol toggles).
+- FR11 Validation: Server-side validation for required fields (e.g., age ranges, positive income), and safe text handling.
+- FR12 Error Handling: Friendly messages for DB connection problems and Groq API failures (timeouts, rate limits).
+
+0.2 Non-Functional Requirements (NFR)
+- NFR1 Security: Passwords hashed (e.g., PBKDF2/argon2); session protection enabled; CSRF for mutating forms.
+- NFR2 Privacy: Row-level authorization: only resource owner can view/delete their assessments.
+- NFR3 Reliability: Graceful degradation when Groq API fails (show RAF and local recommendations fallback).
+- NFR4 Performance: Typical pages render <2s on broadband; queries indexed by user_id, created_at.
+- NFR5 Scalability: Stateless app servers; DB connection pooling; pagination for recent assessments.
+- NFR6 Maintainability: Separation of concerns (routes, services, models, utils), docstrings, clear naming.
+- NFR7 Observability: Request/error logging with timestamps; no sensitive data in logs.
+- NFR8 Accessibility: Keyboard navigable, focus-visible states, aria attributes where necessary.
+- NFR9 Compatibility: Modern Chrome/Edge/Firefox/Safari; mobile-first responsive design.
+- NFR10 Localization-ready: All currency in INR; future extension to localized messaging possible.
+
+0.3 Other Requirements (OR)
+- OR1 Tech Stack: Python 3.12, Flask, SQLAlchemy, MySQL 8, PyMySQL, HTML5/CSS3/JavaScript (ES6).
+- OR2 Environment Variables:
+  - DATABASE_URL (mysql+pymysql://root:root@127.0.0.1:3306/insurance_app by default)
+  - SECRET_KEY (session security)
+  - GROQ_API_KEY (Groq access; never hardcode in code)
+- OR3 Data Model: users, profiles, assessments. Assessments store input_snapshot_json and output_json for traceability.
+- OR4 INR Handling: Store annual_income_inr as BIGINT (or INT if ranges are bounded) and display formatted in INR.
+- OR5 Deployment: Can run locally (venv + env vars) or containerized. External DB must be reachable and secured.
+
+1. IMPLEMENTATION
+
+1.1 Algorithms
+
+1.1.1 RAF Calculation (Exact Logic Used)
+Inputs:
+- age (integer, 0–100 capped)
+- health_issues (free text, matched against curated list with aliases)
+- smoking (boolean)
+- alcohol (boolean)
+- annual_income_inr (integer rupees)
+
+Derived components:
+- Age risk:
+  - age < 30 → 0.15
+  - 30–44 → 0.35
+  - 45–59 → 0.55
+  - 60+   → 0.75
+- Health risk:
+  - From curated health issues list (terms normalized to lowercase; aliases in parentheses handled).
+  - Let k = number of matched conditions (deduped). Then:
+    - health_risk = min(0.6, 0.2 + 0.15 × k) if k > 0
+    - health_risk = 0.1 if no curated match but user entered some health text
+    - health_risk = 0.0 if empty
+- Lifestyle risk:
+  - smoking: +0.20 if true
+  - alcohol: +0.10 if true
+- Income risk (annual_income_inr in INR):
+  - < 300,000 → 0.15
+  - 300,000–799,999 → 0.10
+  - ≥ 800,000 → 0.05
+
+Overall RAF (clamped):
+- Let raf_raw = age_risk + health_risk + lifestyle_risk + income_risk
+- Final:
+  - $$\text{RAF} = \max(0,\ \min(1,\ \text{raf\_raw}))$$
+
+Notes:
+- The curated health list improves detection versus a few hard-coded keywords.
+- If needed, weights and thresholds are tunable (e.g., condition-specific weights, different INR bands).
+
+1.1.2 Policy Recommendation and AI Insights
+- Inputs to Groq: profile snapshot, RAF score, and derived factors (age band, lifestyle, health issues list, income band).
+- Prompt: concise, deterministic structure asking for:
+  - Top 2–3 policy categories (e.g., Term Life, Health Insurance with riders, Critical Illness)
+  - Coverage ranges suited to income band (INR), rationale per choice, disclaimers
+- Output: parsed JSON or structured text stored in assessments.output_json for auditability.
+
+1.1.1 Code (Pseudocode and File References)
+- compute_raf (utils.py):
+  - Read health issues list (data/health-issues.txt)
+  - Normalize user input; match curated terms/aliases
+  - Compute age_risk, health_risk, lifestyle_risk, income_risk
+  - Clamp and return RAF in [0,1]
+
+Pseudocode:
+- profile = get_profile()
+- age = clamp_int(profile.age, 0, 100)
+- smoking = bool(profile.smoking); alcohol = bool(profile.alcohol)
+- income = int(profile.annual_income_inr or 0)
+- health_text = normalize(profile.health_issues)
+- terms = load_health_terms()  # curated list with aliases
+- matches = count_matches(terms, health_text)
+- if matches > 0: health_risk = min(0.6, 0.2 + 0.15 * matches)
+- elif health_text: health_risk = 0.1
+- else: health_risk = 0.0
+- age_risk = banded_value(age)
+- lifestyle_risk = 0.2 * smoking + 0.1 * alcohol
+- income_risk = banded_value(income)
+- raf = clamp(age_risk + health_risk + lifestyle_risk + income_risk, 0, 1)
+
+- Routes (app.py): /register, /login, /logout, /profile (GET/POST), /assessments (list), /assessments/new (create), /assessments/<id>/delete (delete).
+- Services (services/groq_client.py): generate insights/recommendations with GROQ_API_KEY.
+- Models (models.py): User, Profile, Assessment with relationships and timestamps.
+
+1.2 Architectural Components
+
+Layers:
+- Presentation: Jinja2 templates (base, landing, register, login, profile, assessment screens). Progressive enhancement with ES6 for UI transitions and interactive controls (e.g., toggle switches).
+- Routes/Controllers: Flask blueprints or app routes handling form submissions, validation, auth, and navigation.
+- Services: Groq client for external AI calls; helper functions for formatting INR and structuring prompts.
+- Business Logic: RAF computation and health issue matching in utils.py.
+- Data Layer: SQLAlchemy ORM; MySQL 8 via PyMySQL. Tables: users, profiles, assessments (with input/output JSON snapshots).
+- Security: Password hashing, session management, CSRF protection for mutating endpoints.
+
+Primary sequences:
+- Registration: POST /register → create User → login and redirect.
+- Login: POST /login → establish session → redirect to dashboard/profile.
+- Profile Update: POST /profile → validate/save → flash success → stay on page.
+- New Assessment: POST /assessments/new → compute RAF → call Groq → persist Assessment → redirect to detail/list.
+- Delete Assessment: POST /assessments/<id>/delete → verify ownership → delete → redirect to list.
+
+1.3 Feature Extraction
+
+From Profile:
+- Categorical bands: age_band (u30, 30–44, 45–59, 60+); income_band (<3L, 3–7.99L, ≥8L).
+- Lifestyle: smoking_flag (0/1), alcohol_flag (0/1), lifestyle_risk = 0.2*smoking + 0.1*alcohol.
+- Health: tokenized matches from curated list (deduped; aliases unified), match_count = k, health_risk per algorithm.
+- Derived: age_risk, income_risk, RAF ∈ [0,1].
+
+For Groq prompt:
+- Compact JSON snapshot: age_band, lifestyle_risk, health_terms (matched), income_band, raf. This focuses the model on signal and reduces prompt noise.
+
+1.4 Packages/Libraries Used
+
+Backend:
+- Flask (web framework, routing, templating)
+- SQLAlchemy (ORM)
+- PyMySQL (MySQL driver)
+- passlib/werkzeug.security (password hashing)
+- python-dotenv (optional local env)
+- requests/httpx (for external calls if needed)
+- itsdangerous/Flask-WTF (CSRF, optional)
+
+Frontend:
+- HTML5, CSS3, ES6
+- Progressive enhancement JS (fetch for autosave, transitions)
+- Accessible form patterns (focus-visible, keyboard navigation)
+
+AI:
+- Groq via GROQ_API_KEY (kept in environment variables; no hardcoding)
+
+1.5 Output Screens
+
+- Landing: App overview with CTA to register/login.
+- Register: Email + password form; validation and success redirect.
+- Login: Email + password; errors surfaced; link to register.
+- Dashboard: Quick links to Profile and New Assessment; recent activity snippet.
+- Profile: Full user details including annual_income_inr (INR), smoking, alcohol, health_issues. Smooth UI toggles for lifestyle fields.
+- New Assessment: One-click (or confirm) to compute RAF and call Groq; shows progress state; on success, redirects to results.
+- Assessment Results: RAF value, inputs snapshot, Groq insights, recommended policies and rationales.
+- Recent Activity: Paginated list of assessments; delete button per row with confirmation.
+- Logout: Ends session; confirmation toast or redirect to login.
+
+2. SYSTEM TESTING
+
+2.1 Test Cases (Representative)
+- Auth
+  - TC-A1 Register with valid email/password → success, session created.
+  - TC-A2 Register with duplicate email → fails with message.
+  - TC-A3 Login valid → success; invalid → error.
+  - TC-A4 Logout → session cleared, protected routes redirect to login.
+- Profile
+  - TC-P1 Save valid profile (age bounds, INR positive) → success.
+  - TC-P2 Invalid age (negative/too high) → validation error.
+  - TC-P3 Large INR values (e.g., >1 crore) → stored and displayed correctly.
+  - TC-P4 Health issues match: enter known terms → matched count increases.
+- Assessment
+  - TC-AS1 Create assessment with no health issues, non-smoker/non-drinker → low RAF; stored.
+  - TC-AS2 Create with multiple curated health issues + smoker → higher RAF; stored.
+  - TC-AS3 Delete own assessment → removed from list.
+  - TC-AS4 Unauthorized delete (other user’s id) → forbidden/not found.
+- AI/Groq
+  - TC-G1 Groq success → structured recommendations saved in output_json.
+  - TC-G2 Groq timeout/error → user sees fallback message; record stored with partial data.
+- DB/Resilience
+  - TC-DB1 DB down → friendly error banner; logs contain trace (no secrets).
+  - TC-DB2 Migration mismatch → log actionable message; remediation documented.
+
+2.2 Results and Discussions
+- Each test has clear pass criteria (HTTP 200/302 for success, validation error messages for invalid input).
+- Measured RAF values fall within [0,1] and are consistent with input deltas (e.g., adding “smoking” increases by 0.20).
+- Deletion and authorization verified to prevent cross-user access.
+
+2.3 Performance Evaluation
+- Page load TTI < 2 seconds on broadband with warm cache.
+- DB queries:
+  - INSERT assessment < 50 ms average on local dev; indexed by (user_id, created_at).
+  - List recent activity with LIMIT/OFFSET shows < 150 ms for first page on dev hardware.
+- Groq calls: ~200–1000 ms typical; UI shows loading state; overall request bounded by client timeout (e.g., 8–12 s).
+- Optimization ideas: Server-side caching for non-sensitive health metadata; keep connections pooled; reduce template payload size.
+
+Appendix
+
+A. Data Model (Conceptual)
+- users(id, email, password_hash, created_at)
+- profiles(id, user_id FK→users.id, full_name, age, gender, annual_income_inr, smoking, alcohol, health_issues, updated_at)
+- assessments(id, user_id FK→users.id, raf_score, input_snapshot_json, output_json, created_at)
+
+B. Environment Configuration
+- DATABASE_URL="mysql+pymysql://root:root@127.0.0.1:3306/insurance_app"
+- SECRET_KEY="change-this-secret"
+- GROQ_API_KEY="your-groq-api-key-from-env"
+Never hardcode secrets; prefer per-environment configuration.
+
+C. Error Handling & Fallbacks
+- Groq failure: show RAF and local, rules-based recommendations (e.g., if RAF ≥ 0.75 suggest higher-cover health insurance + critical illness rider).
+- Schema mismatch: SQL migrations provided; or drop/recreate dev DB to resync quickly.
+
+D. INR Formatting
+- Store integer rupees; format in UI with Indian groupings (e.g., ₹12,34,567). Avoid floating-point for currency storage.
+
+E. Security Notes
+- Use secure password hashing; consider account lockout or slow-down on repeated failed logins; ensure CSRF on form posts.
+
+End of Document

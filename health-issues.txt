@@ -1,0 +1,76 @@
+- Acne
+- ADHD (Attention Deficit Hyperactivity Disorder)
+- Alcohol-related liver disease
+- Alzheimer's disease
+- Anemia
+- Anxiety disorders
+- Arthritis (Osteoarthritis, Rheumatoid)
+- Asthma
+- Atrial fibrillation
+- Autism spectrum disorders
+- Back pain
+- Bipolar disorder
+- Breast cancer
+- Celiac disease
+- Chickenpox
+- Chronic obstructive pulmonary disease (COPD)
+- Cirrhosis
+- Colorectal cancer
+- Congestive heart failure
+- Coronary artery disease
+- Crohn’s disease
+- Cystic fibrosis
+- Dengue
+- Depression
+- Diabetes (Type 1 and Type 2)
+- Down syndrome
+- Drug addiction
+- Eczema
+- Endometriosis
+- Epilepsy
+- Erectile dysfunction
+- Fatty liver disease
+- Flu (Influenza)
+- Gallstones
+- Gastroesophageal reflux disease (GERD)
+- Gout
+- Heart attack (Myocardial infarction)
+- Hepatitis (A, B, C)
+- High blood pressure (Hypertension)
+- HIV/AIDS
+- Hyperthyroidism
+- Hypothyroidism
+- Infertility
+- Irritable bowel syndrome (IBS)
+- Kidney disease
+- Leukemia
+- Liver disease
+- Lung cancer
+- Lupus
+- Malaria
+- Measles
+- Melanoma (Skin cancer)
+- Metabolic syndrome
+- Multiple sclerosis
+- Muscular dystrophy
+- Obesity
+- Osteoporosis
+- Parkinson's disease
+- Peptic ulcers
+- Peripheral artery disease
+- Polycystic ovary syndrome (PCOS)
+- Pneumonia
+- Prostate cancer
+- Psoriasis
+- Rosacea
+- Schizophrenia
+- Sexually transmitted infections (STIs)
+- Sickle cell anemia
+- Skin infections (fungal, bacterial)
+- Sleep disorders
+- Smoking-related illnesses
+- Stroke
+- Thyroid disorders
+- Tuberculosis
+- Ulcerative colitis
+- Zika virus

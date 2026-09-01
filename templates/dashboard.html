@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Dashboard</h2>
+<div class="stack">
+  <a class="btn btn-primary" href="{{ url_for('new_assessment') }}">New Assessment</a>
+
+  <section>
+    <h3>Recent Activity</h3>
+    {% if recent %}
+      <ul class="list">
+        {% for r in recent %}
+          {% set out = r.output_json | safe %}
+          {% set parsed = out | loadjson %}
+          <li class="card">
+            <div class="row between">
+              <strong>Assessment #{{ r.id }}</strong>
+              <small>{{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+            </div>
+            <div>RAF Score: {{ "%.3f" % r.raf_score }}</div>
+            {% if parsed and parsed.get("policy_recommendations") %}
+              <div class="policies">
+                {% for p in parsed["policy_recommendations"][:2] %}
+                  <div class="pill">{{ p["name"] }}</div>
+                {% endfor %}
+              </div>
+            {% endif %}
+            <form action="{{ url_for('delete_assessment', aid=r.id) }}" method="post" class="inline-form right">
+              <button class="btn btn-danger">Delete</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+      <a class="btn btn-secondary" href="{{ url_for('list_assessments') }}">View all</a>
+    {% else %}
+      <p>No assessments yet.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

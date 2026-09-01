@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Assessments</h2>
+<a class="btn btn-secondary" href="{{ url_for('new_assessment') }}">New Assessment</a>
+<ul class="list">
+  {% for r in items %}
+    {% set parsed = (r.output_json | safe) | loadjson %}
+    <li class="card">
+      <div class="row between">
+        <strong>Assessment #{{ r.id }}</strong>
+        <small>{{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</small>
+      </div>
+      <div>RAF Score: <strong>{{ "%.3f" % r.raf_score }}</strong></div>
+
+      {% if parsed and parsed.get("health_insights") %}
+        <div class="stack">
+          <h4>Health Insights</h4>
+          <ul class="bullets">
+            {% for h in parsed["health_insights"] %}
+              <li>{{ h }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if parsed and parsed.get("policy_recommendations") %}
+        <div class="stack">
+          <h4>Policy Recommendations</h4>
+          <div class="grid-3">
+            {% for p in parsed["policy_recommendations"] %}
+              <div class="policy card">
+                <div class="row between">
+                  <strong>{{ p["name"] }}</strong>
+                  <span class="badge">{{ p["type"] }}</span>
+                </div>
+                <p class="muted">{{ p["rationale"] }}</p>
+                <div class="kv">
+                  <div><span>Premium:</span> <strong>{{ p["estimated_monthly_premium_inr"]|inr }}</strong> / mo</div>
+                  <div><span>Coverage:</span> <strong>{{ p["coverage_inr"]|inr }}</strong></div>
+                  <div><span>Waiting:</span> <strong>{{ p["waiting_period_months"] }}</strong> months</div>
+                  {% if p.get("url") %}
+                  <div><span>Website:</span> <a href="{{ p['url'] }}" target="_blank" class="policy-link">Visit Website</a></div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <form action="{{ url_for('delete_assessment', aid=r.id) }}" method="post" class="inline-form">
+        <button class="btn btn-danger">Delete</button>
+      </form>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}
